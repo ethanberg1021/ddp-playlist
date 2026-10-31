@@ -1,0 +1,61 @@
+<!--
+  DDP Playlist Player – download section for dragdropproduction.com
+  Paste into an HTML embed block (Wix: Add > Embed Code > Embed HTML) or any page.
+  Replace YOUR-GITHUB-NAME below once the GitHub repo exists. The "latest/download" links
+  always point at the newest release, but the file name includes the version, so update
+  1.0.0 when you ship a new version (or upload the files to your site and link those instead).
+-->
+<section class="ddp-dl">
+  <style>
+    .ddp-dl{font-family:Georgia,'Times New Roman',serif;background:#0a0a0a;color:#f4ede0;padding:48px 24px;border-radius:6px}
+    .ddp-dl .wrap{max-width:820px;margin:0 auto}
+    .ddp-dl .eyebrow{color:#d4a24c;letter-spacing:.18em;text-transform:uppercase;font-size:13px;margin:0 0 8px}
+    .ddp-dl h2{font-size:34px;font-weight:normal;margin:0 0 12px;color:#fff}
+    .ddp-dl p.lede{font-size:18px;line-height:1.55;margin:0 0 28px;color:#d9d2c3}
+    .ddp-dl .btns{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:10px}
+    .ddp-dl a.btn{display:inline-block;padding:14px 22px;border-radius:4px;text-decoration:none;font-size:17px;border:1px solid #d4a24c}
+    .ddp-dl a.primary{background:#d4a24c;color:#0a0a0a}
+    .ddp-dl a.secondary{color:#d4a24c;background:transparent}
+    .ddp-dl a.btn small{display:block;font-size:12px;opacity:.75;margin-top:2px}
+    .ddp-dl .req{font-size:14px;color:#a89f8e;margin:0 0 30px}
+    .ddp-dl .box{background:#f6f0e4;color:#1d1a15;border-radius:4px;padding:22px 24px;margin-bottom:16px}
+    .ddp-dl .box h3{margin:0 0 10px;font-size:19px;font-weight:normal;color:#0a0a0a}
+    .ddp-dl .box ol,.ddp-dl .box ul{margin:0;padding-left:20px;line-height:1.6;font-size:16px}
+    .ddp-dl .box em{color:#8a6420;font-style:normal}
+  </style>
+  <div class="wrap">
+    <p class="eyebrow">Free OBS plugin</p>
+    <h2>DDP Playlist Player</h2>
+    <p class="lede">Load your sponsors' commercials into a playlist, hit one button, and OBS cuts
+      to the break, plays every spot in order, and cuts back to the show. Playlists save per
+      project, and every control works from a Stream Deck through Companion.</p>
+
+    <div class="btns">
+      <a class="btn primary" href="https://github.com/YOUR-GITHUB-NAME/ddp-playlist/releases/latest/download/ddp-playlist-1.0.0-windows-x64-Installer.exe">
+        Download for Windows<small>Installer (.exe) · Windows 10/11 64-bit</small></a>
+      <a class="btn secondary" href="https://github.com/YOUR-GITHUB-NAME/ddp-playlist/releases/latest/download/ddp-playlist-1.0.0-macos-universal.pkg">
+        Download for Mac<small>Installer (.pkg) · Apple Silicon &amp; Intel</small></a>
+    </div>
+    <p class="req">Requires OBS Studio 30 or newer · Version 1.0.0</p>
+
+    <div class="box">
+      <h3>Install</h3>
+      <ol>
+        <li>Close OBS.</li>
+        <li>Run the installer. <em>Windows:</em> if you see "Windows protected your PC", click
+          More info → Run anyway. <em>Mac:</em> right-click the .pkg → Open.</li>
+        <li>Open OBS. The <strong>DDP Playlist</strong> panel appears on the right
+          (later: Docks → DDP Playlist).</li>
+      </ol>
+    </div>
+    <div class="box">
+      <h3>Stream Deck / Companion</h3>
+      <ul>
+        <li>OBS connection → <em>Custom - Send Vendor Request</em>, vendor <strong>DDPPlaylist</strong>,
+          request <strong>ToggleBreak</strong>.</li>
+        <li>Or <em>Hotkey - Trigger by ID</em>: <strong>ddp_playlist.take_break</strong>,
+          <strong>ddp_playlist.play_pause</strong>, <strong>ddp_playlist.next</strong>…</li>
+      </ul>
+    </div>
+  </div>
+</section>
