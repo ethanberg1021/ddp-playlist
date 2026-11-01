@@ -23,6 +23,7 @@ with this program. If not, see <https://www.gnu.org/licenses/>
 #include "playlist-controller.hpp"
 #include "playlist-dock.hpp"
 #include "remote-control.hpp"
+#include "thumbnailer.hpp"
 
 #include <QDockWidget>
 #include <QMainWindow>
@@ -67,11 +68,16 @@ static void frontendEvent(enum obs_frontend_event event, void *)
 	switch (event) {
 	case OBS_FRONTEND_EVENT_FINISHED_LOADING:
 		c->onCollectionLoaded();
+		if (auto *th = Thumbnailer::instance())
+			th->setReady();
 		if (c->takeFirstLaunch())
 			introduceDock();
 		break;
 	case OBS_FRONTEND_EVENT_SCENE_COLLECTION_CHANGED:
 		c->onCollectionLoaded();
+		break;
+	case OBS_FRONTEND_EVENT_TRANSITION_STOPPED:
+		c->onTransitionStopped();
 		break;
 	case OBS_FRONTEND_EVENT_SCENE_COLLECTION_CLEANUP:
 		c->onCollectionCleanup();
@@ -94,6 +100,7 @@ static void saveCallback(obs_data_t *, bool saving, void *)
 bool obs_module_load(void)
 {
 	PlaylistController::create();
+	Thumbnailer::create();
 	PlaylistController::instance()->loadLibrary();
 
 	auto *dock = new PlaylistDock(static_cast<QMainWindow *>(obs_frontend_get_main_window()));
@@ -122,6 +129,7 @@ void obs_module_unload(void)
 	RemoteControl::unregisterHotkeys();
 	if (auto *c = PlaylistController::instance())
 		c->saveLibrary();
+	Thumbnailer::destroy();
 	PlaylistController::destroy();
 	obs_log(LOG_INFO, "DDP Playlist Player unloaded");
 }

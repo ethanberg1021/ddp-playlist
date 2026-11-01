@@ -46,6 +46,8 @@ target_sources(
     src/playlist-dock.hpp
     src/remote-control.cpp
     src/remote-control.hpp
+    src/thumbnailer.cpp
+    src/thumbnailer.hpp
 )
 
 set_target_properties_plugin(${CMAKE_PROJECT_NAME} PROPERTIES OUTPUT_NAME ${_name})

@@ -10,6 +10,7 @@ the Free Software Foundation; either version 2 of the License, or
 
 #include "playlist-dock.hpp"
 #include "playlist-controller.hpp"
+#include "thumbnailer.hpp"
 
 #include <QCheckBox>
 #include <QComboBox>
@@ -225,7 +226,9 @@ PlaylistDock::PlaylistDock(QWidget *parent) : QWidget(parent), ctrl(PlaylistCont
 
 	/* --- clip list --- */
 	list = new ClipList();
-	list->setMinimumHeight(140);
+	list->setMinimumHeight(170);
+	list->setIconSize(Thumbnailer::iconSize());
+	list->setSpacing(1);
 	list->setToolTip("Drag videos in from your desktop. Drag rows to reorder.\n"
 			 "Double-click to play  •  F2 rename  •  Delete removes");
 	root->addWidget(list, 1);
@@ -288,7 +291,8 @@ PlaylistDock::PlaylistDock(QWidget *parent) : QWidget(parent), ctrl(PlaylistCont
 	breakBtn->setMinimumHeight(38);
 	breakBtn->setFocusPolicy(Qt::NoFocus);
 	breakBtn->setToolTip("Cuts program to the commercial-break scene and plays this playlist from the top.\n"
-			     "When the last clip ends it returns to the scene you came from.");
+			     "When the last clip ends it goes to your Preview scene (Studio Mode)\n"
+			     "or back to the scene you came from.");
 	root->addWidget(breakBtn);
 
 	/* --- options --- */
@@ -298,14 +302,25 @@ PlaylistDock::PlaylistDock(QWidget *parent) : QWidget(parent), ctrl(PlaylistCont
 	autoAdvanceChk = new QCheckBox("Auto-advance");
 	autoAdvanceChk->setToolTip("Play the next clip automatically when one ends");
 	loopChk = new QCheckBox("Loop playlist");
-	returnChk = new QCheckBox("Return to show after break");
 	monitorChk = new QCheckBox("Hear audio (monitor)");
 	monitorChk->setToolTip("Monitor and output the player's audio so you hear it in your headphones");
 	opts->addWidget(autoAdvanceChk, 0, 0);
 	opts->addWidget(loopChk, 0, 1);
-	opts->addWidget(returnChk, 1, 0);
-	opts->addWidget(monitorChk, 1, 1);
+	opts->addWidget(monitorChk, 1, 0, 1, 2);
 	root->addLayout(opts);
+
+	auto *afterRow = new QHBoxLayout();
+	afterRow->addWidget(new QLabel("When break ends"));
+	afterBreakCombo = new QComboBox();
+	afterBreakCombo->addItem("Take the Preview scene");  // Library::TakePreview
+	afterBreakCombo->addItem("Go back to previous scene"); // Library::BackToPrevious
+	afterBreakCombo->addItem("Stay on break scene");      // Library::StayOnBreak
+	afterBreakCombo->setToolTip("Take the Preview scene: in Studio Mode, whatever you've cued in Preview\n"
+				    "goes to Program the moment the last spot ends (like hitting Transition).\n"
+				    "If Studio Mode is off or nothing different is cued, it goes back to the\n"
+				    "scene you were on before the break.");
+	afterRow->addWidget(afterBreakCombo, 1);
+	root->addLayout(afterRow);
 
 	auto *addToScene = new QPushButton("Add player to current scene");
 	addToScene->setToolTip("Puts the \"DDP Playlist Player\" source into the scene you're looking at,\n"
@@ -316,6 +331,13 @@ PlaylistDock::PlaylistDock(QWidget *parent) : QWidget(parent), ctrl(PlaylistCont
 	/* --- wiring --- */
 	connect(ctrl, &PlaylistController::libraryChanged, this, &PlaylistDock::rebuild);
 	connect(ctrl, &PlaylistController::playbackChanged, this, &PlaylistDock::refreshPlayback);
+	if (Thumbnailer *th = Thumbnailer::instance())
+		connect(th, &Thumbnailer::thumbnailReady, this, [this](const QString &path) {
+			for (int i = 0; i < list->count(); i++)
+				if (list->item(i)->toolTip() == path)
+					applyRowLook(list->item(i));
+			refreshPlayback();
+		});
 
 	connect(projectCombo, qOverload<int>(&QComboBox::activated), this, &PlaylistDock::onProjectChosen);
 	connect(playlistCombo, qOverload<int>(&QComboBox::activated), this, &PlaylistDock::onPlaylistChosen);
@@ -366,9 +388,9 @@ PlaylistDock::PlaylistDock(QWidget *parent) : QWidget(parent), ctrl(PlaylistCont
 		if (!rebuilding)
 			ctrl->setLoop(on);
 	});
-	connect(returnChk, &QCheckBox::toggled, this, [this](bool on) {
+	connect(afterBreakCombo, qOverload<int>(&QComboBox::activated), this, [this](int mode) {
 		if (!rebuilding)
-			ctrl->setReturnAfterBreak(on);
+			ctrl->setAfterBreak(mode);
 	});
 	connect(monitorChk, &QCheckBox::toggled, this, [this](bool on) {
 		if (!rebuilding)
@@ -381,6 +403,25 @@ PlaylistDock::PlaylistDock(QWidget *parent) : QWidget(parent), ctrl(PlaylistCont
 	timer->start();
 
 	rebuild();
+}
+
+/* Thumbnail + "3.  Ford Spot   0:30" for one row. The on-air marker is
+ * added on top of this by refreshPlayback(). */
+void PlaylistDock::applyRowLook(QListWidgetItem *row)
+{
+	QString path = row->toolTip();
+	bool missing = !QFileInfo::exists(path);
+	QString text = QString("%1.  %2").arg(row->data(Qt::UserRole + 2).toInt()).arg(row->data(Qt::UserRole + 3).toString());
+	if (missing) {
+		text += "\n      file missing";
+	} else if (Thumbnailer *th = Thumbnailer::instance()) {
+		int64_t ms = th->durationMs(path);
+		if (ms > 0)
+			text += "\n      " + formatTime(ms);
+		row->setIcon(th->iconFor(path));
+	}
+	row->setData(Qt::UserRole + 1, text);
+	row->setText(text);
 }
 
 QString PlaylistDock::askName(const QString &title, const QString &label, const QString &current)
@@ -438,9 +479,9 @@ void PlaylistDock::rebuild()
 			row->setData(Qt::UserRole, it.id);
 			row->setToolTip(it.path);
 			bool missing = !QFileInfo::exists(it.path);
-			QString text = QString("%1.  %2%3").arg(n++).arg(it.name).arg(missing ? "   (file missing)" : "");
-			row->setText(text);
-			row->setData(Qt::UserRole + 1, text);
+			row->setData(Qt::UserRole + 2, n++);
+			row->setData(Qt::UserRole + 3, it.name);
+			applyRowLook(row);
 			if (missing) {
 				QFont f = row->font();
 				f.setItalic(true);
@@ -456,7 +497,7 @@ void PlaylistDock::rebuild()
 		autoAdvanceChk->setChecked(pl->autoAdvance);
 		loopChk->setChecked(pl->loop);
 	}
-	returnChk->setChecked(lib.returnAfterBreak);
+	afterBreakCombo->setCurrentIndex(lib.afterBreak);
 	monitorChk->setChecked(lib.monitorAudio);
 
 	rebuilding = false;

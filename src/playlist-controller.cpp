@@ -443,9 +443,9 @@ void PlaylistController::setAutoAdvance(bool on)
 	}
 }
 
-void PlaylistController::setReturnAfterBreak(bool on)
+void PlaylistController::setAfterBreak(int mode)
 {
-	lib.returnAfterBreak = on;
+	lib.afterBreak = qBound(0, mode, 2);
 	changed();
 }
 
@@ -638,6 +638,7 @@ void PlaylistController::onCollectionCleanup()
 	playingItem.clear();
 	playingPlaylist.clear();
 	weakPreviousScene = nullptr;
+	pendingCue = nullptr;
 	detachPlayer();
 	emit playbackChanged();
 }
@@ -870,6 +871,20 @@ void PlaylistController::takeBreak()
 		return;
 
 	breakActive = true;
+
+	/* Studio Mode: OBS normally swaps the old Program scene into Preview when
+	 * it transitions. Put back whatever the operator had cued so it's still
+	 * waiting there when the break ends. */
+	bool studio = obs_frontend_preview_program_mode_active();
+	OBSSourceAutoRelease cued = studio ? obs_frontend_get_current_preview_scene() : nullptr;
+
+	if (studio && cued && cued.Get() != breakScene.Get()) {
+		// the swap happens when the transition finishes, so restore after that
+		pendingCue = obs_source_get_weak_source(cued);
+		int wait = obs_frontend_get_transition_duration() + 500;
+		QTimer::singleShot(wait, this, &PlaylistController::onTransitionStopped); // safety net
+	}
+
 	obs_frontend_set_current_scene(breakScene);
 	emit playbackChanged();
 }
@@ -885,9 +900,31 @@ void PlaylistController::endBreak()
 	OBSSourceAutoRelease prev =
 		weakPreviousScene ? obs_weak_source_get_source(weakPreviousScene) : nullptr;
 	weakPreviousScene = nullptr;
+	if (prev && obs_source_removed(prev))
+		prev = nullptr;
 
-	if (lib.returnAfterBreak && prev && !obs_source_removed(prev)) {
+	bool switched = false;
+
+	/* Studio Mode: take whatever the operator has cued in Preview, like hitting
+	 * the Transition button. Skipped if Preview is just the break scene itself. */
+	if (lib.afterBreak == Library::TakePreview && obs_frontend_preview_program_mode_active()) {
+		OBSSourceAutoRelease preview = obs_frontend_get_current_preview_scene();
+		OBSSourceAutoRelease program = obs_frontend_get_current_scene();
+		if (preview && preview.Get() != program.Get()) {
+			obs_log(LOG_INFO, "Break over: taking Preview scene '%s'", obs_source_get_name(preview));
+			obs_frontend_preview_program_trigger_transition();
+			switched = true;
+		}
+	}
+
+	// Not in Studio Mode (or nothing cued): go back to where we came from
+	if (!switched && lib.afterBreak != Library::StayOnBreak && prev) {
+		obs_log(LOG_INFO, "Break over: back to '%s'", obs_source_get_name(prev));
 		obs_frontend_set_current_scene(prev);
+		switched = true;
+	}
+
+	if (switched) {
 		// let the transition finish on the clip before clearing it
 		quint64 token = ++stopToken;
 		int wait = obs_frontend_get_transition_duration() + 150;
@@ -899,6 +936,19 @@ void PlaylistController::endBreak()
 	} else {
 		stop();
 	}
+}
+
+void PlaylistController::onTransitionStopped()
+{
+	if (!pendingCue)
+		return;
+	OBSSourceAutoRelease cued = obs_weak_source_get_source(pendingCue);
+	pendingCue = nullptr;
+	if (!cued || obs_source_removed(cued) || !obs_frontend_preview_program_mode_active())
+		return;
+	OBSSourceAutoRelease nowCued = obs_frontend_get_current_preview_scene();
+	if (nowCued.Get() != cued.Get())
+		obs_frontend_set_current_preview_scene(cued);
 }
 
 void PlaylistController::toggleBreak()

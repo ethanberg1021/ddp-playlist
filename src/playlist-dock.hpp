@@ -60,6 +60,7 @@ private slots:
 	void showClipMenu(const QPoint &pos);
 
 private:
+	void applyRowLook(QListWidgetItem *row);
 	QString askName(const QString &title, const QString &label, const QString &current);
 	QStringList selectedIds() const;
 	QString currentId() const;
@@ -91,7 +92,7 @@ private:
 
 	QCheckBox *autoAdvanceChk;
 	QCheckBox *loopChk;
-	QCheckBox *returnChk;
+	QComboBox *afterBreakCombo;
 	QCheckBox *monitorChk;
 
 	QTimer *timer;

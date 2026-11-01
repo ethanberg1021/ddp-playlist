@@ -182,7 +182,10 @@ bool Library::load(const QString &path, QString *hotkeysJson)
 		projects.append(projectFromJson(v.toObject()));
 
 	activeProjectId = root["activeProjectId"].toString();
-	returnAfterBreak = root["returnAfterBreak"].toBool(true);
+	if (root.contains("afterBreak"))
+		afterBreak = qBound(0, root["afterBreak"].toInt(TakePreview), 2);
+	else if (root.contains("returnAfterBreak")) // files from 1.0.0
+		afterBreak = root["returnAfterBreak"].toBool(true) ? TakePreview : StayOnBreak;
 	monitorAudio = root["monitorAudio"].toBool(true);
 	dockIntroduced = root["dockIntroduced"].toBool(false);
 	QString scene = root["breakSceneName"].toString();
@@ -201,7 +204,7 @@ bool Library::save(const QString &path, const QString &hotkeysJson) const
 	QJsonObject root;
 	root["formatVersion"] = kFormatVersion;
 	root["activeProjectId"] = activeProjectId;
-	root["returnAfterBreak"] = returnAfterBreak;
+	root["afterBreak"] = afterBreak;
 	root["monitorAudio"] = monitorAudio;
 	root["dockIntroduced"] = dockIntroduced;
 	root["breakSceneName"] = breakSceneName;

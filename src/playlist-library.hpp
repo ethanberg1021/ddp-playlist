@@ -45,7 +45,9 @@ struct Library {
 	QVector<Project> projects;
 	QString activeProjectId;
 
-	bool returnAfterBreak = true;
+	/* What happens when a break finishes */
+	enum AfterBreak { TakePreview = 0, BackToPrevious = 1, StayOnBreak = 2 };
+	int afterBreak = TakePreview;
 	bool monitorAudio = true;
 	bool dockIntroduced = false; // dock auto-shown once on first launch
 	QString breakSceneName = QStringLiteral("DDP Commercial Break");

@@ -8,6 +8,7 @@ Built by Drag Drop Production.
 - **Projects** – one per show or client. Each keeps its own playlists.
 - **Playlists** – e.g. "Commercial Break 1", "Sponsor Reel". Rename, duplicate, delete.
 - **Clips** – drag video or audio files in, drag to reorder, rename the display name, remove.
+  Each clip shows a thumbnail and its length.
 - **Take Break** – one button cuts program to the *DDP Commercial Break* scene, plays the
   playlist top to bottom, then cuts back to the scene you were on.
 - **Stream Deck / Companion** – every control is an OBS hotkey and an obs-websocket
@@ -27,7 +28,7 @@ Requires OBS Studio 30 or newer (Windows 10/11 64-bit, macOS 12+ Apple Silicon o
 4. Drag commercials into the list (or click **+ Add**). Drag rows to set the order.
    Double-click a clip to rename it — the file on disk is never renamed.
 5. Hit **TAKE BREAK**. Program cuts to the break scene and the clips play in order.
-   When the last one ends, OBS goes back to your show scene on its own.
+   When the last one ends, OBS takes your Preview camera (Studio Mode) or goes back to your show scene.
    Hit **END BREAK** any time to bail out early.
 
 Prefer commercials over your own layout? Click **Add player to current scene** and use
@@ -37,8 +38,8 @@ the transport buttons (play/pause/stop/next/previous) instead of Take Break.
 |---|---|
 | Auto-advance | Next clip starts when one ends (on by default) |
 | Loop playlist | Starts over after the last clip |
-| Return to show after break | Cuts back to the previous scene when the break finishes |
 | Hear audio (monitor) | Sends the player's audio to your monitoring device as well as the stream |
+| When break ends | **Take the Preview scene** (default): in Studio Mode, whatever camera you have in Preview goes live the moment the last spot ends — cue it any time during the break. Without Studio Mode it goes back to the scene you came from. Also: *Go back to previous scene*, *Stay on break scene*. |
 
 Keyboard in the list: **Enter** plays, **F2** renames, **Delete** removes. Right-click a clip
 for *Show file in folder*.

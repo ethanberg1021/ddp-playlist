@@ -63,7 +63,7 @@ public:
 
 	void setLoop(bool on);
 	void setAutoAdvance(bool on);
-	void setReturnAfterBreak(bool on);
+	void setAfterBreak(int mode);
 	void setMonitorAudio(bool on);
 
 	/* ---- playback ---- */
@@ -102,6 +102,7 @@ public:
 
 	void onCollectionLoaded();
 	void onCollectionCleanup();
+	void onTransitionStopped();
 
 signals:
 	void libraryChanged();
@@ -146,4 +147,5 @@ private:
 
 	OBSWeakSourceAutoRelease weakPlayer;
 	OBSWeakSourceAutoRelease weakPreviousScene;
+	OBSWeakSourceAutoRelease pendingCue; // Preview scene to put back after a break starts
 };
